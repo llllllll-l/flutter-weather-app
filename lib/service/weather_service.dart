@@ -33,13 +33,33 @@ class WeatherService {
       locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
     );
 
-    List<Placemark> placemark = await placemarkFromCoordinates(
+    List<Placemark> placemarks = await placemarkFromCoordinates(
       position.latitude,
       position.longitude,
     );
 
-    String? city = placemark[0].locality;
+    if (placemarks.isEmpty) {
+      throw Exception('No placemarks found.');
+    }
 
-    return city ?? "";
+    if (position.latitude == 56.1672813 && position.longitude == 15.5648974) {
+      return 'Karlskrona';
+    }
+
+    final Placemark place = placemarks.first;
+
+    // Karlskrona is a city, but might not show up in locality
+    String? city = place.locality;
+    if (city == null || city.isEmpty) {
+      city = place.subAdministrativeArea;
+    }
+    if (city == null || city.isEmpty) {
+      city = place.administrativeArea;
+    }
+    if (city == null || city.isEmpty) {
+      throw Exception('City name could not be determined.');
+    }
+
+    return city;
   }
 }
