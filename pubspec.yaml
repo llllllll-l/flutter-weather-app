@@ -38,6 +38,8 @@ dependencies:
   http: ^1.3.0
   geolocator: ^13.0.4
   geocoding: ^3.0.0
+  lottie: ^3.3.1
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +64,7 @@ flutter:
 
   assets:
     - .env
+    - assets/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

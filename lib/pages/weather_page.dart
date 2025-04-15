@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:lottie/lottie.dart';
 import 'package:weather_app/models/weather_modal.dart';
 import 'package:weather_app/service/weather_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class WeatherPage extends StatefulWidget {
   const WeatherPage({super.key});
@@ -36,12 +38,38 @@ class _WeatherPageState extends State<WeatherPage> {
     }
   }
 
+  String getWeatherAnimation(String? mainCondition) {
+    if (mainCondition == null) return 'assets/sunwithclouds.json';
+
+    switch (mainCondition.toLowerCase()) {
+      case 'clouds':
+      case 'mist':
+      case 'smoke':
+      case 'haze':
+      case 'dust':
+      case 'fog':
+        return 'assets/clouds.json';
+      case 'snow':
+        return 'assets/snow.json';
+      case 'rain':
+      case 'drizzle':
+      case 'shower rain':
+        return 'assets/rain.json';
+      case 'thunderstorm':
+        return 'assets/storm.json';
+      case 'clear':
+        return 'assets/sun.json';
+      default:
+        return 'assets/sunwithclouds.json';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
 
     // fetch weather
-    _fetchWeather();
+    _fetchWeather(); // testing for animations, I do not want to reach the limit by accident
   }
 
   @override
@@ -54,9 +82,29 @@ class _WeatherPageState extends State<WeatherPage> {
                 : Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(_weather?.cityName ?? "Loading city..."),
-                    Text('${_weather?.temperature.round().toString()} \u00B0C'),
-                    Text(_weather?.mainCondition ?? ""),
+                    // location marker
+                    const Icon(Icons.location_on, size: 32, color: Colors.red),
+                    // city
+                    Text(
+                      _weather?.cityName ?? "Loading city...",
+                      style: GoogleFonts.openSans(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+
+                    const SizedBox(height: 140),
+
+                    // animation
+                    Lottie.asset(getWeatherAnimation(_weather?.mainCondition)),
+
+                    const SizedBox(height: 70),
+
+                    // temp
+                    Text(
+                      '${_weather?.temperature.round().toString()} \u00B0C',
+                      style: GoogleFonts.openSans(fontSize: 22),
+                    ),
                   ],
                 ),
       ),

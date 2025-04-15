@@ -1,8 +1,11 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:weather_app/models/weather_modal.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class WeatherService {
@@ -33,33 +36,50 @@ class WeatherService {
       locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
     );
 
-    List<Placemark> placemarks = await placemarkFromCoordinates(
-      position.latitude,
-      position.longitude,
-    );
+    // use Google Geocoding API to get the city (a lot more accurate)
+    return await getCityFromCoordinates(position.latitude, position.longitude);
+  }
 
-    if (placemarks.isEmpty) {
-      throw Exception('No placemarks found.');
-    }
+  Future<String> getCityFromCoordinates(double lat, double lng) async {
+    try {
+      final String? api_key = dotenv.env['GOOGLE_GEOCODING_API_KEY'] ?? "";
+      final url =
+          'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$api_key';
 
-    if (position.latitude == 56.1672813 && position.longitude == 15.5648974) {
-      return 'Karlskrona';
-    }
+      final res = await http.get(Uri.parse(url));
 
-    final Placemark place = placemarks.first;
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
 
-    // Karlskrona is a city, but might not show up in locality
-    String? city = place.locality;
-    if (city == null || city.isEmpty) {
-      city = place.subAdministrativeArea;
-    }
-    if (city == null || city.isEmpty) {
-      city = place.administrativeArea;
-    }
-    if (city == null || city.isEmpty) {
-      throw Exception('City name could not be determined.');
-    }
+        if (data['status'] == 'OK') {
+          for (var result in data['results']) {
+            for (var component in result['address_components']) {
+              if (component['types'].contains('locality')) {
+                return component['long_name'];
+              }
+            }
+          }
+        }
+        throw Exception('City not found in Google response.');
+      } else {
+        throw Exception('Google API error: ${res.statusCode}');
+      }
+    } catch (e) {
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(lat, lng);
 
-    return city;
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          return place.locality ??
+              place.subAdministrativeArea ??
+              place.administrativeArea ??
+              "Unknown location...";
+        } else {
+          throw Exception("No placemarks found.");
+        }
+      } catch (fellbackError) {
+        throw Exception('Both geocoding methods failed: $fellbackError');
+      }
+    }
   }
 }
